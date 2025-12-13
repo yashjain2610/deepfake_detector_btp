@@ -8,7 +8,7 @@ from torchvision import transforms
 from PIL import Image
 
 # --- CONFIGURATION ---
-IMG_SIZE = 299  # Matches your XceptionNet requirement
+IMG_SIZE = 299  # Matches XceptionNet requirement
 # Mean and Std for ImageNet (Standard for XceptionNet/ViT)
 MEAN = [0.5, 0.5, 0.5]
 STD = [0.5, 0.5, 0.5]

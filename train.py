@@ -7,17 +7,17 @@ from tqdm import tqdm
 import numpy as np
 from sklearn.metrics import accuracy_score, roc_auc_score
 
-# --- IMPORT YOUR CUSTOM MODULES ---
-from dataset import DeepfakeDataset
+# --- IMPORT CUSTOM MODULES ---
+from dct_transformation import DeepfakeDataset
 from model import DeepfakeDetector
 
 # --- CONFIGURATION ---
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 16       # Lower this if you get "Out of Memory" errors
-EPOCHS = 20           # How many times to go through the dataset
-LEARNING_RATE = 1e-4  # 0.0001 is a good starting point for fine-tuning
+BATCH_SIZE = 16       
+EPOCHS = 5         
+LEARNING_RATE = 1e-4 
 IMG_SIZE = 299
-NUM_WORKERS = 2       # Set to 0 if you are on Windows and get a "BrokenPipe" error
+NUM_WORKERS = 4 
 
 def train_one_epoch(model, loader, criterion, optimizer, device):
     model.train()
@@ -98,8 +98,6 @@ def main():
     print(f"Using Device: {DEVICE}")
     
     # 1. Define Transforms
-    # Note: dataset.py handles resize/to_tensor if transform is None, 
-    # but explicit transforms are safer.
     data_transforms = transforms.Compose([
         transforms.Resize((IMG_SIZE, IMG_SIZE)),
         transforms.ToTensor(),

@@ -18,8 +18,6 @@ from mtcnn.mtcnn import MTCNN
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# --- CONFIGURATION: YOU MUST EDIT THIS SECTION ---
-
 IMG_SIZE = 299
 CROP_MARGIN = 0.2
 FRAME_INTERVAL = 20
@@ -28,7 +26,9 @@ OUTPUT_DIR = Path("./processed_data")
 DATASET_ROOTS = {
     #"train_ff_real": Path(r"C:\Users\yash jain\Desktop\folders\btp\FaceForensics++_C23\original"),
     #"train_ff_fake_deepfakes": Path(r"C:\Users\yash jain\Desktop\folders\btp\FaceForensics++_C23\Deepfakes")
-    "train_ff_fake_face2face": Path(r"C:\Users\yash jain\Desktop\folders\btp\FaceForensics++_C23\Face2Face")
+    # "train_ff_fake_face2face": Path(r"C:\Users\yash jain\Desktop\folders\btp\FaceForensics++_C23\Face2Face")
+    #"celeb_real": Path(r"C:\Users\yash jain\Desktop\folders\btp\Celeb-real"),
+    "celeb_fake": Path(r"C:\Users\yash jain\Desktop\folders\btp\Celeb-synthesis")
 }
 
 # Number of threads to use
@@ -43,7 +43,7 @@ def process_video(video_path, output_dir, detector, split_name, label):
     Reads a video, detects faces, crops, and saves them.
     """
     video_name = video_path.stem
-    frame_output_dir = output_dir / "train" / "face2face" / f"{video_name}_frames"
+    frame_output_dir = output_dir / "test_celebdf" / "fake" / f"{video_name}_frames"
     frame_output_dir.mkdir(parents=True, exist_ok=True)
     
     try:
@@ -129,7 +129,7 @@ def main():
         print(f"Source: {root_path}")
 
         video_files = list(root_path.glob("*.mp4")) + list(root_path.glob("*.avi"))
-        video_files = video_files[801:1000]
+        video_files = video_files[0:201]
         if not video_files:
             print(f"Warning: No .mp4 or .avi videos found in {root_path}", file=sys.stderr)
             continue

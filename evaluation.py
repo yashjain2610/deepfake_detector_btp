@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score, roc_auc_score, classification_report
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# --- IMPORT YOUR CUSTOM MODULES ---
+# --- IMPORT CUSTOM MODULES ---
 from dct_transformation import DeepfakeDataset
 from model import DeepfakeDetector
 
@@ -18,8 +18,8 @@ BATCH_SIZE = 16
 IMG_SIZE = 299
 NUM_WORKERS = 2
 
-# Name of the split folder you want to test on
-# Options: "validation" (FF++), "test_celecdf" (Celeb-DF), "test_dfdc" (DFDC)
+# Name of the split folder to test on
+# Options: "validation" (FF++), "test_celebdf" (Celeb-DF)"
 TEST_SPLIT_NAME = "test_celebdf" 
 
 def test_model():

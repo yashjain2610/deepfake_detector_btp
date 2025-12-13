@@ -14,7 +14,7 @@ class SpatialStream(nn.Module):
     """
     def __init__(self):
         super(SpatialStream, self).__init__()
-        # Load Xception (aligned with your synopsis choice)
+        # Load Xception
         # We remove the final classification layer ('classifier') to get raw features
         self.backbone = timm.create_model('xception', pretrained=True, num_classes=0)
         
