@@ -144,7 +144,6 @@ def main():
 
     print("\n--- Preprocessing Complete ---")
     print(f"All processed data saved in: {OUTPUT_DIR.resolve()}")
-    print("You can now proceed to model training.")
 
 
 if __name__ == "__main__":

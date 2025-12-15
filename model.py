@@ -47,7 +47,7 @@ class FrequencyStream(nn.Module):
 
 class AttentionFusion(nn.Module):
     """
-    The "Attentive Fusion Mechanism" from your synopsis.
+    The "Attentive Fusion Mechanism".
     It dynamically decides which stream is more important for each specific image.
     """
     def __init__(self, dim_spatial, dim_freq, fusion_dim=512):
@@ -134,4 +134,3 @@ if __name__ == "__main__":
     
     print(f"\nLogits shape: {logits.shape} (Should be [2, 1])")
     print(f"Attention Weights: \n{weights}")
-    print("\nIf you see numbers above, the Dual-Stream architecture is working!")

@@ -38,7 +38,6 @@ def test_model():
     
     if len(test_dataset) == 0:
         print(f"Error: No images found in processed_data/{TEST_SPLIT_NAME}")
-        print("Did you download and preprocess the Celeb-DF or DFDC dataset?")
         return
 
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)

@@ -182,7 +182,6 @@ if __name__ == "__main__":
         dct_img = unnormalize_and_convert(dct_data)
         cv2.imwrite("dct_preview.png", dct_img)
         print("Saved: dct_preview.png (The Frequency map the model sees)")
-        print("Open 'dct_preview.png' to see the hidden frequency artifacts!")
         
     else:
-        print("Dataset is empty. Check your 'root_dir' path.")
+        print("Dataset is empty")

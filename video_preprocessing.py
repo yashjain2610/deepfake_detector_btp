@@ -5,7 +5,6 @@ from pathlib import Path
 from mtcnn.mtcnn import MTCNN
 import sys
 
-# --- CONFIGURATION: YOU MUST EDIT THIS SECTION ---
 
 # 1. Set the desired output size for your models
 # 299x299 is for XceptionNet. Use 224x224 for ViT if preferred.
@@ -23,26 +22,11 @@ FRAME_INTERVAL = 20
 # 4. Set the main output directory for your processed faces
 OUTPUT_DIR = Path("./processed_data")
 
-# 5. Set the paths to your DOWNLOADED datasets.
-# This example assumes you have downloaded FaceForensics++ and Celeb-DF.
-# You MUST change these paths to match your local machine.
 DATASET_ROOTS = {
     "train_ff_real": Path(r"C:\Users\yash jain\Desktop\folders\btp\FaceForensics++_C23\original"),
-    # "train_ff_fake_deepfakes": Path("/path/to/your/FaceForensics++/Deepfakes"),
-    # "train_ff_fake_face2face": Path("/path/to/your/FaceForensics++/Face2Face"),
-    # "train_ff_fake_faceswap": Path("/path/to/your/FaceForensics++/FaceSwap"),
-    # "train_ff_fake_faceshifter": Path("/path/to/your/FaceForensics++/FaceShifter"),
-    # "train_ff_fake_neuraltextures": Path("/path/to/your/FaceForensics++/NeuralTextures"),
-    
-    # "test_celecdf_real": Path("/path/to/your/Celeb-DF-v2/Celeb-real"),
-    # "test_celecdf_fake": Path("/path/to/your/Celeb-DF-v2/Celeb-synthesis"),
-    
-    # Add paths for DFDC or other FF++ manipulations (NeuralTextures, etc.) here
-    # "test_dfdc_real": Path("/path/to/your/DFDC/real"),
-    # "test_dfdc_fake": Path("/path/to/your/DFDC/fake"),
+
 }
 
-# --- END OF CONFIGURATION ---
 
 
 def process_video(video_path, output_dir, detector, split_name, label):
@@ -190,7 +174,6 @@ def main():
 
     print("\n--- Preprocessing Complete ---")
     print(f"All processed data saved in: {OUTPUT_DIR.resolve()}")
-    print("You can now proceed to model training.")
 
 
 if __name__ == "__main__":

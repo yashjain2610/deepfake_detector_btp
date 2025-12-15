@@ -64,7 +64,6 @@ def create_split():
             
     print("\n--- Split Complete ---")
     print(f"Validation data created at: {VAL_DIR}")
-    print("You can now run train.py!")
 
 if __name__ == "__main__":
     # Safety check
