@@ -47,8 +47,10 @@ class FrequencyStream(nn.Module):
 
 class AttentionFusion(nn.Module):
     """
-    The "Attentive Fusion Mechanism".
-    It dynamically decides which stream is more important for each specific image.
+    Channel-Wise Gated Fusion Mechanism.
+    Instead of 2 coarse scalar weights, this learns a 512-dim gate vector
+    via Sigmoid, allowing fine-grained per-dimension control over which
+    features come from the spatial vs frequency stream.
     """
     def __init__(self, dim_spatial, dim_freq, fusion_dim=512):
         super(AttentionFusion, self).__init__()
@@ -57,33 +59,31 @@ class AttentionFusion(nn.Module):
         self.spatial_proj = nn.Linear(dim_spatial, fusion_dim)
         self.freq_proj = nn.Linear(dim_freq, fusion_dim)
         
-        # Attention Gate
-        # Takes the concatenated features and outputs a weight (0 to 1) for each stream
-        self.attention_net = nn.Sequential(
-            nn.Linear(fusion_dim * 2, 128),
+        # Channel-wise gating network
+        # Input: concatenated projected features [batch, fusion_dim * 2]
+        # Output: gate vector [batch, fusion_dim] with values in (0, 1)
+        self.gate = nn.Sequential(
+            nn.Linear(fusion_dim * 2, fusion_dim),
             nn.ReLU(),
-            nn.Linear(128, 2), # Output 2 weights: one for spatial, one for freq
-            nn.Softmax(dim=1)
+            nn.Linear(fusion_dim, fusion_dim),
+            nn.Sigmoid()  # Per-dimension gate values between 0 and 1
         )
 
     def forward(self, spatial_feat, freq_feat):
         # 1. Project to same dimension
-        s_emb = F.relu(self.spatial_proj(spatial_feat)) # [batch, 512]
-        f_emb = F.relu(self.freq_proj(freq_feat))       # [batch, 512]
+        s_emb = F.relu(self.spatial_proj(spatial_feat))  # [batch, 512]
+        f_emb = F.relu(self.freq_proj(freq_feat))        # [batch, 512]
         
         # 2. Concatenate
-        combined = torch.cat([s_emb, f_emb], dim=1)     # [batch, 1024]
+        combined = torch.cat([s_emb, f_emb], dim=1)      # [batch, 1024]
         
-        # 3. Calculate Attention Weights
-        weights = self.attention_net(combined)          # [batch, 2]
-        alpha_s = weights[:, 0].unsqueeze(1)            # Spatial weight
-        alpha_f = weights[:, 1].unsqueeze(1)            # Frequency weight
+        # 3. Compute channel-wise gate
+        g = self.gate(combined)                           # [batch, 512]
         
-        # 4. Weighted Fusion
-        # Fused = (Weight_S * Spatial) + (Weight_F * Frequency)
-        fused_embedding = (alpha_s * s_emb) + (alpha_f * f_emb)
+        # 4. Gated fusion: g * spatial + (1-g) * frequency
+        fused_embedding = g * s_emb + (1 - g) * f_emb    # [batch, 512]
         
-        return fused_embedding, weights
+        return fused_embedding, g
 
 class DeepfakeDetector(nn.Module):
     """
@@ -100,10 +100,12 @@ class DeepfakeDetector(nn.Module):
             dim_freq=self.freq_stream.feature_dim
         )
         
-        # Final Classifier
+        # Final Classifier (2-layer head for more capacity)
         self.classifier = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
             nn.Dropout(DROPOUT_RATE),
-            nn.Linear(512, NUM_CLASSES) # Output 1 logit (for BCEWithLogitsLoss)
+            nn.Linear(256, NUM_CLASSES)  # Output 1 logit (for BCEWithLogitsLoss)
         )
 
     def forward(self, rgb_img, dct_img):
