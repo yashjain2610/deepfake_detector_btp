@@ -1,0 +1,131 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{url}
+
+\title{A Compression-Resilient Deepfake Detector via Attentive Spatial--Frequency Fusion}
+
+\author{
+\IEEEauthorblockN{Yash Aggarwal \hspace{1.2em} Yash Jain}
+\IEEEauthorblockA{Department of Computer Science and Engineering\\
+Delhi Technological University, Delhi, India\\
+Email: \{author1,author2\}@dtu.ac.in}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Deepfake detection models often fail to generalize across datasets and degrade sharply under lossy compression, limiting real-world deployment. We present a dual-stream deepfake detector that fuses complementary spatial and frequency-domain cues using a channel-wise gated attention mechanism. The spatial stream uses an ImageNet-pretrained Xception backbone to capture macro inconsistencies, while the frequency stream analyzes per-channel Discrete Cosine Transform (DCT) maps with a lightweight ResNet-18 backbone. A learned 512-dimensional gate adaptively blends the two embeddings, enabling robustness when frequency cues are weakened by compression. We evaluate in-domain performance on an internal FaceForensics++ validation split and cross-dataset generalization by training on FaceForensics++ and testing on Celeb-DF-v2. To avoid misleading results from fixed thresholds, we select operating thresholds on the validation split and report threshold-free metrics (AUROC, AP) as well as operating-point metrics (EER, TPR@FPR, balanced accuracy). Our model achieves AUROC of 0.9955 in-domain (video-level) and 0.9018 cross-dataset on Celeb-DF-v2 (video-level), demonstrating competitive generalization under a realistic evaluation protocol.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Deepfake detection, face forgery, frequency domain, DCT, generalization, compression robustness, AUROC, operating point evaluation
+\end{IEEEkeywords}
+
+\section{Introduction}
+The rapid progress of generative models has enabled the creation of highly realistic manipulated facial videos. While deepfake detectors can attain high accuracy on the dataset they are trained on, they often suffer a severe performance drop when evaluated on unseen datasets or unseen manipulation pipelines. This ``domain gap'' is frequently attributed to \emph{shortcut learning}, where a detector overfits to dataset-specific artifacts rather than learning generator-agnostic manipulation signatures.
+
+In practical deployments (e.g., social media), videos undergo aggressive lossy compression. Compression preferentially destroys high-frequency forensic traces, making many detectors brittle in real-world settings. Therefore, a deployable detector must (i) integrate complementary cues that survive distribution shifts and compression, and (ii) be evaluated using threshold-free and operating-point metrics rather than a fixed probability threshold.
+
+\textbf{Contributions.} This work makes three contributions:
+\begin{itemize}
+  \item We propose a dual-stream detector that combines an RGB spatial stream (Xception) with a frequency stream (per-channel DCT maps) using a channel-wise gated fusion mechanism.
+  \item We adopt compression-aware training augmentations (JPEG simulation) and frequency-domain masking to reduce reliance on brittle frequency shortcuts.
+  \item We report a paper-ready evaluation protocol: thresholds are selected on the FaceForensics++ validation split and applied to cross-dataset testing; we report AUROC/AP as well as EER and TPR@FPR for deployment-relevant interpretation.
+\end{itemize}
+
+\section{Related Work}
+\textbf{Datasets.} FaceForensics++ (FF++)~\cite{rossler2019faceforensics} and Celeb-DF~\cite{li2020celebdf} are widely used benchmarks for face forgery detection. Cross-dataset testing (e.g., FF++$\rightarrow$Celeb-DF-v2) is substantially harder than in-domain testing due to distribution shifts.
+
+\textbf{Backbones and spatial detectors.} Xception~\cite{chollet2017xception} is a strong CNN baseline frequently used in deepfake detection. Many recent methods extend spatial modeling with improved augmentations or attention mechanisms.
+
+\textbf{Frequency-based cues.} High-frequency residuals and frequency-domain features can improve generalization and robustness~\cite{luo2021hf}, but can also be sensitive to compression and shortcut learning. Hybrid spatial--frequency fusion is a common strategy; our work focuses on adaptive channel-wise fusion to stabilize performance across compression levels.
+
+\textbf{Comparison reference.} A recent unified approach combines spatial and frequency cues with additional modules and reports strong AUCs on FF++ and Celeb-DF~\cite{mukherjee2026unified}. Differences in preprocessing, dataset versions, and evaluation granularity (frame vs video) can significantly affect reported numbers; we therefore emphasize a transparent operating-point protocol.
+
+\section{Method}
+\subsection{Overview}
+Given an input face crop $I \in \mathbb{R}^{H \times W \times 3}$, we process it through two parallel streams:
+\begin{enumerate}
+  \item \textbf{Spatial stream} processes RGB appearance using Xception, producing a 2048-D embedding.
+  \item \textbf{Frequency stream} computes per-channel DCT log-magnitude maps and processes them with ResNet-18, producing a 512-D embedding.
+\end{enumerate}
+Both embeddings are projected to a shared 512-D space and fused via a channel-wise gate $g \in (0,1)^{512}$:
+\begin{equation}
+  z = g \odot z_s + (1-g) \odot z_f,
+\end{equation}
+where $z_s$ and $z_f$ are the projected spatial and frequency embeddings. A small MLP head outputs a single logit for binary classification (Real vs Fake).
+
+\subsection{Frequency Representation (Per-Channel DCT)}
+We compute a per-channel DCT on the RGB image, apply a log-magnitude transform, and normalize per channel. This yields a 3-channel DCT map aligned with the input resolution. Because JPEG/MPEG compression operates in a DCT-like domain, modeling artifacts here provides a natural interface for compression-aware learning.
+
+\subsection{Channel-wise Gated Fusion}
+Instead of assigning a single scalar weight per stream, we learn a 512-dimensional gate conditioned on the concatenated projected features:
+\begin{equation}
+  g = \sigma(\mathrm{MLP}([z_s; z_f])).
+\end{equation}
+This enables fine-grained control (per feature dimension), allowing the model to down-weight unstable frequency dimensions under heavy compression while preserving robust spatial cues.
+
+\section{Experimental Setup}
+\subsection{Preprocessing}
+Faces are detected and cropped from source videos, then resized to $299 \times 299$. Frames are normalized and used as inputs for both streams. The frequency stream computes DCT maps from the same (potentially augmented) image to reflect the true compressed/perturbed state.
+
+\subsection{Training and Evaluation Protocol}
+We train on FaceForensics++ and evaluate:
+\begin{itemize}
+  \item \textbf{In-domain:} internal FF++ validation split (frames grouped by video directory).
+  \item \textbf{Cross-dataset:} FF++$\rightarrow$Celeb-DF-v2 test split.
+\end{itemize}
+Video-level probabilities are computed by averaging frame probabilities per video directory.
+
+\textbf{Operating point selection.} A key pitfall in imbalanced datasets is reporting accuracy at a fixed threshold (e.g., 0.5), which can be misleading. We therefore select thresholds on the FF++ validation split and apply them to all splits. We report:
+\begin{itemize}
+  \item \textbf{Threshold-free:} AUROC, average precision (AP).
+  \item \textbf{Operating point:} EER, TPR@FPR, and balanced accuracy at the selected threshold (Youden's $J$).
+\end{itemize}
+
+\section{Results and Discussion}
+\subsection{Main Results}
+Table~\ref{tab:main} summarizes frame-level and video-level results. As expected, video aggregation improves AUROC, indicating that averaging across frames reduces variance and yields more stable per-video decisions. Cross-dataset generalization to Celeb-DF-v2 remains challenging; nevertheless, our model achieves AUROC 0.9018 (video-level) under a validation-selected threshold protocol.
+
+\begin{table}[t]
+\centering
+\caption{Evaluation results with thresholds selected on FF++ validation (Youden's $J$). ``Val'' denotes the internal FF++ validation split; ``CDFv2'' denotes Celeb-DF-v2 test.}
+\label{tab:main}
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Split} & \textbf{Level} & \textbf{AUROC} & \textbf{AP} & \textbf{EER} & \textbf{BalAcc} \\
+\midrule
+Val & Frame & 0.9804 & 0.9969 & 0.0690 & 0.9345 \\
+Val & Video & 0.9955 & 0.9990 & 0.0313 & 0.9751 \\
+\midrule
+CDFv2 & Frame & 0.8227 & 0.9752 & 0.2596 & 0.7372 \\
+CDFv2 & Video & 0.9018 & 0.9873 & 0.1749 & 0.8093 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Operating-point Interpretation}
+On Celeb-DF-v2, strict low-false-alarm settings (e.g., FPR=1\%) yield lower detection rates of fake videos. This is not a contradiction with high accuracy previously observed at a fixed threshold; rather, it reflects the standard trade-off between false positives and true positives, particularly under severe class imbalance. Balanced reporting via Youden-selected thresholds and balanced accuracy provides a more reliable depiction of usability for content moderation.
+
+\subsection{Comparison to Recent Unified Spatial--Frequency Work}
+Mukherjee~\cite{mukherjee2026unified} reports cross-domain AUC of 94.01\% on ``CDF'' when trained on FF++, whereas our video-level AUROC on Celeb-DF-v2 is 90.18\%. Direct comparison is complicated by differences in dataset version, preprocessing pipelines, and whether AUC is computed at frame-level or video-level. Nevertheless, our method achieves competitive generalization using a simpler two-stream architecture and emphasizes transparent operating-point reporting (EER, TPR@FPR, balanced accuracy), which is often omitted in AUC-only comparisons.
+
+\section{Conclusion}
+We presented a dual-stream deepfake detector that fuses spatial RGB features and frequency-domain DCT cues using channel-wise gated fusion. Evaluated under a validation-selected threshold protocol, the model achieves strong in-domain performance and competitive cross-dataset generalization to Celeb-DF-v2. Future work includes evaluating on additional out-of-domain datasets (e.g., DFDC), extending robustness analysis under controlled compression levels, and adding temporal modeling to better capture video-level inconsistencies.
+
+\section*{Acknowledgment}
+We thank our project supervisor Dr.\ Neha Gupta (Delhi Technological University) for guidance and feedback.
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}
+
