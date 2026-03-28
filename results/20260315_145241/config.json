@@ -1,0 +1,13 @@
+{
+  "checkpoint": "best_model.pth",
+  "splits": [
+    "validation",
+    "test_celebdf"
+  ],
+  "threshold_source_split": "validation",
+  "data_root": "./processed_data",
+  "device": "mps",
+  "batch_size": 16,
+  "img_size": 299,
+  "num_workers": 2
+}
