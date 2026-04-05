@@ -111,68 +111,86 @@ Given an input face crop $I \in \mathbb{R}^{H \times W \times 3}$, our detector 
 
 \begin{figure*}[t]
   \centering
+  \resizebox{\textwidth}{!}{%
   \begin{tikzpicture}[
-    block/.style={draw, rounded corners, minimum height=0.75cm, minimum width=1.7cm,
-                  align=center, font=\small},
-    wideblock/.style={draw, rounded corners, minimum height=0.75cm, minimum width=2.4cm,
-                  align=center, font=\small},
-    arrow/.style={-{Stealth[length=2mm]}, thick},
-    x=1cm, y=1cm,
+      block/.style={draw, rounded corners, minimum height=0.9cm, minimum width=2.4cm,
+                    align=center, font=\small},
+      wideblock/.style={draw, rounded corners, minimum height=0.9cm, minimum width=3.4cm,
+                    align=center, font=\small},
+      arrow/.style={-{Stealth[length=2mm]}, thick},
+      darrow/.style={-{Stealth[length=2mm]}, thick, dashed, gray},
+      node distance=0.6cm and 1.6cm
   ]
-    %% ---- Input ----
-    \node[block, fill=blue!12] (input) at (0,0) {Face Crop\\$299{\times}299{\times}3$};
-
-    %% ---- Spatial stream (top row) ----
-    \node[block, fill=orange!20] (xception) at (2.6, 1.1) {Xception\\(ImageNet)};
-    \node[block, fill=orange!12] (s_proj)   at (4.9, 1.1) {Proj.\ 2048$\!\to\!$512};
-
-    %% ---- Frequency stream (bottom row) ----
-    \node[block, fill=green!18] (dct)    at (2.0,-1.1) {Per-Ch.\ DCT};
-    \node[block, fill=green!18] (resnet) at (4.0,-1.1) {ResNet-18\\(ImageNet)};
-    \node[block, fill=green!12] (f_proj) at (6.2,-1.1) {Proj.\ 512$\!\to\!$512};
-
-    %% ---- Gate ----
-    \node[block, fill=red!12] (gate) at (7.6, 0) {Gate\\$\sigma$(MLP)};
-
-    %% ---- Fusion ----
-    \node[wideblock, fill=purple!12] (fusion) at (9.6, 0)
-      {$g\!\odot\! z_s\!+\!(1\!-\!g)\!\odot\! z_f$};
-
-    %% ---- Classifier ----
-    \node[block, fill=gray!18] (mlp) at (11.6, 0) {MLP\\$512\!\to\!256\!\to\!1$};
-    \node[block, fill=yellow!18] (out) at (13.3, 0) {Real /\\Fake};
-
-    %% ---- Arrows: input -> streams ----
-    \draw[arrow] (input.north) |- (xception.west);
-    \draw[arrow] (input.south) |- (dct.west);
-
-    %% ---- Arrows: spatial stream ----
-    \draw[arrow] (xception) -- (s_proj);
-    \draw[arrow] (s_proj.east) -| ([xshift=-0.25cm]gate.north);
-
-    %% ---- Arrows: frequency stream ----
-    \draw[arrow] (dct) -- (resnet);
-    \draw[arrow] (resnet) -- (f_proj);
-    \draw[arrow] (f_proj.east) -| ([xshift=0.25cm]gate.south);
-
-    %% ---- Arrows: gate -> fusion (gate provides g; dashed carry z_s, z_f) ----
-    \draw[arrow] (gate) -- (fusion);
-    \draw[arrow, dashed, gray] (s_proj.east) -- ++(0.3,0) |- (fusion.north west);
-    \draw[arrow, dashed, gray] (f_proj.east) -- ++(0.3,0) |- (fusion.south west);
-
-    %% ---- Arrows: fusion -> output ----
-    \draw[arrow] (fusion) -- (mlp);
-    \draw[arrow] (mlp) -- (out);
-
-    %% ---- Stream labels ----
-    \node[font=\footnotesize\itshape, text=orange!70!black] at (3.75, 1.65)
-      {Spatial stream};
-    \node[font=\footnotesize\itshape, text=green!50!black] at (4.1, -1.65)
-      {Frequency stream};
+  
+  %% ---- Input ----
+  \node[block, fill=blue!12] (input) {Face Crop\\$299{\times}299{\times}3$};
+  
+  %% ---- Spatial stream (top) ----
+  \node[block, fill=orange!20, above right=1.4cm and 1.6cm of input] (xception)
+      {Xception\\(ImageNet)};
+  \node[block, fill=orange!12, right=1.6cm of xception] (s_proj)
+      {Proj.\ 2048$\!\to\!$512};
+  
+  %% ---- Frequency stream (bottom) ----
+  \node[block, fill=green!18, below right=1.4cm and 1.6cm of input] (dct)
+      {Per-Ch.\ DCT};
+  \node[block, fill=green!18, right=1.6cm of dct] (resnet)
+      {ResNet-18\\(ImageNet)};
+  \node[block, fill=green!12, right=1.6cm of resnet] (f_proj)
+      {Proj.\ 512$\!\to\!$512};
+  
+  %% ---- Gate (vertically centered between the two streams) ----
+  \node[block, fill=red!12] (gate) at ($(xception)!0.5!(resnet)+(2.6,0)$)
+      {Gate\\$\sigma$(MLP)};
+  
+  %% ---- Fusion (to the right of gate) ----
+  \node[wideblock, fill=purple!12, right=1.6cm of gate] (fusion)
+      {$g \odot z_s + (1{-}g) \odot z_f$};
+  
+  %% ---- Classifier ----
+  \node[block, fill=gray!18, right=1.6cm of fusion] (mlp)
+      {MLP\\$512\!\to\!256\!\to\!1$};
+  \node[block, fill=yellow!18, right=1.4cm of mlp] (out)
+      {Real / Fake};
+  
+  %% ---- Connections ----
+  
+  % Input to spatial and frequency streams
+  \draw[arrow] (input.east) -- ++(0.5,0) |- (xception.west);
+  \draw[arrow] (input.east) -- ++(0.5,0) |- (dct.west);
+  
+  % Spatial stream internal
+  \draw[arrow] (xception) -- (s_proj);
+  
+  % Frequency stream internal
+  \draw[arrow] (dct) -- (resnet);
+  \draw[arrow] (resnet) -- (f_proj);
+  
+  % s_proj and f_proj → Gate (vertical arrows into top/bottom of gate)
+  \draw[arrow] (s_proj.south) |- (gate.north);
+  \draw[arrow] (f_proj.north) |- (gate.south);
+  
+  % Gate → Fusion (gate values g)
+  \draw[arrow] (gate.east) -- (fusion.west);
+  
+  % Fusion → MLP → Output
+  \draw[arrow] (fusion) -- (mlp);
+  \draw[arrow] (mlp) -- (out);
+  
+  %% ---- Stream Labels ----
+  \node[font=\footnotesize\itshape, text=orange!70!black]
+      at ($(xception)!0.5!(s_proj)+(0,0.85)$) {Spatial stream};
+  \node[font=\footnotesize\itshape, text=green!50!black]
+      at ($(dct)!0.5!(f_proj)+(0.6,-0.85)$) {Frequency stream};
+  
   \end{tikzpicture}
-  \caption{Dual-stream architecture. The spatial stream (Xception, 2048-D$\to$512-D) and the frequency stream (ResNet-18 on per-channel DCT maps, 512-D) are projected to a common 512-D space. Their concatenation drives a gating MLP that produces $g\in(0,1)^{512}$; the element-wise fused vector $z$ is classified by a two-layer MLP head.}
+  }
+  \caption{Dual-stream architecture. The spatial stream (Xception) and frequency stream
+  (ResNet-18 on DCT coefficients) are each projected to a shared 512-D space.
+  A learned gating module $\sigma(\text{MLP})$ produces a soft gate $g$ that blends
+  the two feature vectors before a final MLP classifier outputs Real/Fake.}
   \label{fig:arch}
-\end{figure*}
+  \end{figure*}
 
 \begin{table}[t]
 \centering
@@ -468,12 +486,6 @@ Avg.\ fusion  & \textbf{0.9957} & \textbf{0.9991} & \textbf{0.030} & \textbf{0.9
 \end{tabular}
 \end{table}
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\columnwidth]{figs/ablation_bar.png}
-  \caption{Ablation: AUROC and balanced accuracy for each fusion variant on FF++ validation (video-level).}
-  \label{fig:ablation}
-\end{figure}
 
 \subsection{Comparison with State of the Art}
 Table~\ref{tab:sota} contextualizes our cross-dataset AUROC against published results for FF++$\to$Celeb-DF-v2 generalization.
